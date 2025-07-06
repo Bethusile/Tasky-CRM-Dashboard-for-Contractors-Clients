@@ -80,6 +80,6 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply download this zip folder and run it on VS Code
+? ? ? still figuring it out.
 
 Author: Bethusile Mafumana
