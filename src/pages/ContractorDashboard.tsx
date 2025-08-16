@@ -13,6 +13,17 @@ const ContractorDashboard = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
+  // --- ADDED LOADING CHECK ---
+  // If the user object is null, display a loading message instead of crashing
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <p className="text-xl font-medium text-slate-700">Loading dashboard...</p>
+      </div>
+    );
+  }
+  // --- END OF LOADING CHECK ---
+
   const handleTaskClick = (task: any) => {
     setSelectedTask(task);
     setIsTaskModalOpen(true);
@@ -30,7 +41,8 @@ const ContractorDashboard = () => {
       <div className="flex-1 flex flex-col">
         <header className="bg-white shadow-sm border-b px-6 py-4">
           <h1 className="text-2xl font-bold text-slate-800">
-            Welcome, {user?.name}
+            {/* The user object is guaranteed to exist here, so no need for the '?' */}
+            Welcome, {user.email}!
           </h1>
           <p className="text-slate-600">Here's what's happening with LMB Tradings projects today.</p>
         </header>

@@ -1,19 +1,20 @@
+// src/components/TasksTable.tsx
 
-import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2 } from 'lucide-react';
+import { Eye, Edit } from 'lucide-react';
+import React from 'react';
 
+// Define the interface for the task object
 interface Task {
   id: string;
   title: string;
   client: string;
-  dueDate: string;
   status: 'outstanding' | 'in-progress' | 'completed';
-  timeAllocation: string;
-  personInCharge: string;
-  progress: string;
+  dueDate: string;
 }
 
+// Define the props interface for the component
 interface TasksTableProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
@@ -30,89 +31,34 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, onTaskClick }) => {
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead className="bg-slate-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Task Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Client
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Due Date
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Time Allocation
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Person in Charge
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Progress
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {tasks.map((task, index) => (
-            <tr 
-              key={task.id} 
-              className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100 cursor-pointer`}
-              onClick={() => onTaskClick(task)}
-            >
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="font-medium text-slate-900">{task.title}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                {task.client}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                {task.dueDate}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                {task.timeAllocation}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                {task.personInCharge}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                    <div 
-                      className="bg-teal-600 h-2 rounded-full" 
-                      style={{ width: task.progress }}
-                    ></div>
-                  </div>
-                  <span className="text-sm text-slate-600">{task.progress}</span>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <Badge className={getStatusColor(task.status)}>
-                  {task.status.replace('-', ' ').toUpperCase()}
-                </Badge>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onTaskClick(task); }}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={(e) => e.stopPropagation()}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[200px]">Task Title</TableHead>
+          <TableHead>Client</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Due Date</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {tasks.map((task) => (
+          <TableRow key={task.id} className="cursor-pointer hover:bg-gray-50" onClick={() => onTaskClick(task)}>
+            <TableCell className="font-medium">{task.title}</TableCell>
+            <TableCell>{task.client}</TableCell>
+            <TableCell>
+              <Badge className={getStatusColor(task.status)}>
+                {task.status.replace('-', ' ').toUpperCase()}
+              </Badge>
+            </TableCell>
+            <TableCell>{task.dueDate}</TableCell>
+            <TableCell className="text-right">
+              <Eye className="h-4 w-4 inline-block text-slate-500 hover:text-slate-900" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 };
 

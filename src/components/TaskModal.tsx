@@ -9,6 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, User, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createTask, updateTask } from '../services/supabaseService';
 
 interface Task {
   id: string;
@@ -35,19 +38,44 @@ interface TaskModalProps {
 
 const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, isReadOnly = false }) => {
   const { user } = useAuth();
-  const [editedTask, setEditedTask] = useState<Task | null>(null);
+  const queryClient = useQueryClient();
+const { register, handleSubmit, reset, watch, setValue } = useForm<Task>({
+  defaultValues: task || {},
+});
 
-  useEffect(() => {
-    if (task) {
-      setEditedTask({ ...task });
-    }
-  }, [task]);
+const formStatus = watch("status");
 
-  if (!task || !editedTask) return null;
+useEffect(() => {
+  if (task) {
+    reset(task);
+  } else {
+    reset({});
+  }
+}, [task, reset]);
 
-  const handleSave = () => {
-    onUpdate(editedTask);
-  };
+const { mutate: createNewTask, isPending: isCreating } = useMutation({
+  mutationFn: createTask,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    onClose();
+  },
+});
+
+const { mutate: updateExistingTask, isPending: isUpdating } = useMutation({
+  mutationFn: (taskData: Task) => updateTask(taskData.id, taskData),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    onClose();
+  },
+});
+
+const onSubmit = (data: Task) => {
+  if (task?.id) {
+    updateExistingTask(data);
+  } else {
+    createNewTask(data);
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -59,6 +87,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
   };
 
   const isContractor = user?.role === 'contractor';
+
+  if (!task && !isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -72,13 +102,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
           <div className="space-y-2">
             <Label htmlFor="title">Task Title</Label>
             {isReadOnly || !isContractor ? (
-              <h3 className="text-lg font-medium">{editedTask.title}</h3>
+              <h3 className="text-lg font-medium">{task.title}</h3>
             ) : (
-              <Input
-                id="title"
-                value={editedTask.title}
-                onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
-              />
+              <Input id="title" {...register("title")} />
             )}
           </div>
 
@@ -88,7 +114,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
               <User className="h-4 w-4 text-slate-500" />
               <div>
                 <div className="text-sm font-medium text-slate-700">Client:</div>
-                <div className="text-sm text-slate-600">{editedTask.client}</div>
+                <div className="text-sm text-slate-600">{task.client}</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -104,14 +130,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             {isReadOnly || !isContractor ? (
-              <p className="text-slate-600 bg-slate-50 p-3 rounded-lg">{editedTask.description}</p>
+              <p className="text-slate-600 bg-slate-50 p-3 rounded-lg">{task.description}</p>
             ) : (
-              <Textarea
-                id="description"
-                value={editedTask.description}
-                onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
-                rows={4}
-              />
+              <Textarea id="description" {...register("description")} rows={4} />
             )}
           </div>
 
@@ -121,14 +142,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
               <Calendar className="h-4 w-4 text-slate-500" />
               <div>
                 <div className="text-sm font-medium text-slate-700">Start Date</div>
-                <div className="text-sm text-slate-600">{editedTask.startDate}</div>
+                <div className="text-sm text-slate-600">{task.startDate}</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-slate-500" />
               <div>
                 <div className="text-sm font-medium text-slate-700">Due Date</div>
-                <div className="text-sm text-slate-600">{editedTask.dueDate}</div>
+                <div className="text-sm text-slate-600">{task.dueDate}</div>
               </div>
             </div>
             {isContractor && (
@@ -136,7 +157,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
                 <Clock className="h-4 w-4 text-teal-600" />
                 <div>
                   <div className="text-sm font-medium text-slate-700">Time Allocation</div>
-                  <div className="text-sm text-slate-600">{editedTask.timeAllocation}</div>
+                  <div className="text-sm text-slate-600">{task.timeAllocation}</div>
                 </div>
               </div>
             )}
@@ -147,7 +168,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Person in Charge</Label>
-                <p className="text-slate-600 mt-1">{editedTask.personInCharge}</p>
+                <p className="text-slate-600 mt-1">{task.personInCharge}</p>
               </div>
               <div>
                 <Label>Progress</Label>
@@ -155,10 +176,10 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
                   <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
                     <div 
                       className="bg-teal-600 h-2 rounded-full" 
-                      style={{ width: editedTask.progress }}
+                      style={{ width: task.progress }}
                     ></div>
                   </div>
-                  <span className="text-sm text-slate-600">{editedTask.progress}</span>
+                  <span className="text-sm text-slate-600">{task.progress}</span>
                 </div>
               </div>
             </div>
@@ -171,14 +192,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
                 <Calendar className="h-4 w-4 text-teal-600 mt-1" />
                 <div>
                   <div className="text-sm font-medium text-slate-700">Started by Contractor</div>
-                  <div className="text-sm text-slate-600">{editedTask.contractorStartDate}</div>
+                  <div className="text-sm text-slate-600">{task.contractorStartDate}</div>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-orange-600 mt-1" />
                 <div>
                   <div className="text-sm font-medium text-slate-700">Outstanding from You</div>
-                  <div className="text-sm text-slate-600 bg-orange-50 p-2 rounded">{editedTask.outstandingFromClient}</div>
+                  <div className="text-sm text-slate-600 bg-orange-50 p-2 rounded">{task.outstandingFromClient}</div>
                 </div>
               </div>
             </div>
@@ -188,13 +209,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
           <div className="space-y-2">
             <Label>Status</Label>
             {isReadOnly || !isContractor ? (
-              <Badge className={getStatusColor(editedTask.status)}>
-                {editedTask.status.replace('-', ' ').toUpperCase()}
+              <Badge className={getStatusColor(task.status)}>
+                {task.status.replace('-', ' ').toUpperCase()}
               </Badge>
             ) : (
               <Select 
-                value={editedTask.status} 
-                onValueChange={(value) => setEditedTask({ ...editedTask, status: value as any })}
+                value={formStatus} 
+                onValueChange={(value) => setValue("status", value as any)}
               >
                 <SelectTrigger className="w-48">
                   <SelectValue />
@@ -214,9 +235,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
               {isReadOnly || !isContractor ? 'Close' : 'Cancel'}
             </Button>
             {!isReadOnly && isContractor && (
-              <Button onClick={handleSave} className="bg-teal-600 hover:bg-teal-700">
-                Save Changes
-              </Button>
+              <Button
+                type="submit"
+                disabled={isCreating || isUpdating}
+                className="bg-teal-600 hover:bg-teal-700"
+              >
+              {isCreating || isUpdating ? 'Saving...' : 'Save Changes'}
+            </Button>
             )}
           </div>
         </div>
@@ -226,3 +251,4 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onUpdate, 
 };
 
 export default TaskModal;
+
